@@ -32,7 +32,8 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
         <PayPalScriptProvider
           options={{
             clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "test",
-            currency: "USD",
+            currency: "EUR",
+            intent: "capture",
           }}
         >
           <PayPalButtons
@@ -43,13 +44,12 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
                 purchase_units: [
                   {
                     amount: {
-                      currency_code: "USD",
+                      currency_code: "EUR",
                       value: "10.00",
                     },
                     description: `Donation by ${donorName}`,
                   },
                 ],
-                intent: "CAPTURE",
               });
             }}
             onApprove={async (_data, actions) => {
