@@ -50,6 +50,7 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
                     description: `Donation by ${donorName}`,
                   },
                 ],
+                intent: "CAPTURE",
               });
             }}
             onApprove={async (_data, actions) => {
