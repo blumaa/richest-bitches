@@ -9,9 +9,12 @@ interface DonateSectionProps {
 
 export function DonateSection({ onDonationComplete }: DonateSectionProps) {
   const [donorName, setDonorName] = useState("");
+  const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   const isNameValid = donorName.trim().length > 0;
+  const parsedAmount = parseFloat(amount);
+  const isAmountValid = !isNaN(parsedAmount) && parsedAmount > 0;
 
   return (
     <section className="px-4 py-8">
@@ -29,16 +32,26 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
           className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
         />
 
+        <input
+          type="number"
+          placeholder="Amount (USD)"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          min="1"
+          step="0.01"
+          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+        />
+
         <PayPalButtons
-            disabled={!isNameValid}
+            disabled={!isNameValid || !isAmountValid}
             style={{ layout: "vertical", color: "gold", shape: "rect" }}
             createOrder={(_data, actions) => {
               return actions.order.create({
                 purchase_units: [
                   {
                     amount: {
-                      currency_code: "EUR",
-                      value: "10.00",
+                      currency_code: "USD",
+                      value: parsedAmount.toFixed(2),
                     },
                     description: `Donation by ${donorName}`,
                   },
@@ -65,6 +78,7 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
               if (res.ok) {
                 setStatus("success");
                 setDonorName("");
+                setAmount("");
                 onDonationComplete();
               } else {
                 setStatus("error");

@@ -17,21 +17,30 @@ vi.mock("@paypal/react-paypal-js", () => ({
 import { DonateSection } from "./DonateSection";
 
 describe("DonateSection", () => {
-  it("renders name input and PayPal button", () => {
+  it("renders name input, amount input, and PayPal button", () => {
     render(<DonateSection onDonationComplete={vi.fn()} />);
     expect(screen.getByPlaceholderText(/your name/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/amount/i)).toBeInTheDocument();
     expect(screen.getByTestId("paypal-button")).toBeInTheDocument();
   });
 
-  it("PayPal button is disabled when name input is empty", () => {
+  it("PayPal button is disabled when name and amount are empty", () => {
     render(<DonateSection onDonationComplete={vi.fn()} />);
     expect(screen.getByTestId("paypal-button")).toBeDisabled();
   });
 
-  it("PayPal button is enabled when name is entered", async () => {
+  it("PayPal button is disabled when only name is entered", async () => {
     const user = userEvent.setup();
     render(<DonateSection onDonationComplete={vi.fn()} />);
     await user.type(screen.getByPlaceholderText(/your name/i), "Rich Person");
+    expect(screen.getByTestId("paypal-button")).toBeDisabled();
+  });
+
+  it("PayPal button is enabled when name and valid amount are entered", async () => {
+    const user = userEvent.setup();
+    render(<DonateSection onDonationComplete={vi.fn()} />);
+    await user.type(screen.getByPlaceholderText(/your name/i), "Rich Person");
+    await user.type(screen.getByPlaceholderText(/amount/i), "50");
     expect(screen.getByTestId("paypal-button")).not.toBeDisabled();
   });
 

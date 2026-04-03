@@ -6,7 +6,7 @@ import { DonateSection } from "./DonateSection";
 
 const paypalOptions = {
   clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "test",
-  currency: "EUR",
+  currency: "USD",
   intent: "capture" as const,
 };
 
