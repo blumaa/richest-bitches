@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 
 interface DonateSectionProps {
   onDonationComplete: () => void;
@@ -29,14 +29,7 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
           className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
         />
 
-        <PayPalScriptProvider
-          options={{
-            clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "test",
-            currency: "EUR",
-            intent: "capture",
-          }}
-        >
-          <PayPalButtons
+        <PayPalButtons
             disabled={!isNameValid}
             style={{ layout: "vertical", color: "gold", shape: "rect" }}
             createOrder={(_data, actions) => {
@@ -79,7 +72,6 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
             }}
             onError={() => setStatus("error")}
           />
-        </PayPalScriptProvider>
 
         {status === "success" && (
           <p className="text-green-400 text-center font-semibold">
