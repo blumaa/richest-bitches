@@ -2,13 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock supabase
 const mockInsert = vi.fn();
-const mockSelect = vi.fn();
+const mockLeaderboardSelect = vi.fn();
 vi.mock("@/lib/supabase", () => ({
   supabase: {
-    from: () => ({
-      insert: mockInsert,
-      select: mockSelect,
-    }),
+    from: (table: string) => {
+      if (table === "leaderboard_view") {
+        return { select: mockLeaderboardSelect };
+      }
+      return { insert: mockInsert };
+    },
   },
 }));
 
@@ -41,6 +43,10 @@ describe("POST /api/donations", () => {
       id: "ORDER123",
       status: "COMPLETED",
       purchase_units: [{ amount: { value: "100.00", currency_code: "USD" } }],
+    });
+    mockLeaderboardSelect.mockResolvedValue({
+      data: [{ donor_name: "Test User" }],
+      error: null,
     });
     mockInsert.mockReturnValue({
       select: () => ({
@@ -148,17 +154,78 @@ describe("POST /api/donations", () => {
     expect(insertCall.donor_name).toContain("Rich Guy");
   });
 
-  it("returns 201 with donation record on valid input", async () => {
+  it("returns 201 with donation record and rank on valid input", async () => {
     const res = await POST(makeRequest(validBody));
     expect(res.status).toBe(201);
     const json = await res.json();
     expect(json.data).toHaveProperty("id");
     expect(json.data.donor_name).toBe("Test User");
-    expect(json.data.amount).toBe(100);
+    expect(json.rank).toBe(1);
   });
 
   it("calls PayPal API to verify order", async () => {
     await POST(makeRequest(validBody));
     expect(mockVerifyPayPalOrder).toHaveBeenCalledWith("ORDER123");
+  });
+
+  it("uses PayPal-verified amount, not client-submitted amount", async () => {
+    mockVerifyPayPalOrder.mockResolvedValue({
+      id: "ORDER123",
+      status: "COMPLETED",
+      purchase_units: [{ amount: { value: "25.00", currency_code: "USD" } }],
+    });
+    await POST(
+      makeRequest({ donor_name: "Test", amount: 9999, paypal_order_id: "ORDER123" })
+    );
+    const insertCall = mockInsert.mock.calls[0][0];
+    expect(insertCall.amount).toBe(25);
+  });
+
+  it("returns 400 if PayPal order has no purchase_units", async () => {
+    mockVerifyPayPalOrder.mockResolvedValue({
+      id: "ORDER123",
+      status: "COMPLETED",
+      purchase_units: [],
+    });
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/purchase_units/i);
+  });
+
+  it("returns 400 if PayPal currency is not USD", async () => {
+    mockVerifyPayPalOrder.mockResolvedValue({
+      id: "ORDER123",
+      status: "COMPLETED",
+      purchase_units: [{ amount: { value: "100.00", currency_code: "EUR" } }],
+    });
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/USD/i);
+  });
+
+  it("stores social_handle when provided", async () => {
+    await POST(
+      makeRequest({ ...validBody, social_handle: "@richguy" })
+    );
+    const insertCall = mockInsert.mock.calls[0][0];
+    expect(insertCall.social_handle).toBe("@richguy");
+  });
+
+  it("stores null social_handle when not provided", async () => {
+    await POST(makeRequest(validBody));
+    const insertCall = mockInsert.mock.calls[0][0];
+    expect(insertCall.social_handle).toBeNull();
+  });
+
+  it("returns 400 if PayPal verified amount is zero or negative", async () => {
+    mockVerifyPayPalOrder.mockResolvedValue({
+      id: "ORDER123",
+      status: "COMPLETED",
+      purchase_units: [{ amount: { value: "0.00", currency_code: "USD" } }],
+    });
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(400);
   });
 });

@@ -5,7 +5,7 @@ import { sanitizeName } from "@/lib/sanitize";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { donor_name, amount, paypal_order_id } = body;
+  const { donor_name, amount, paypal_order_id, social_handle } = body;
 
   if (!donor_name || typeof donor_name !== "string" || donor_name.trim() === "") {
     return NextResponse.json(
@@ -46,12 +46,40 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!order.purchase_units || order.purchase_units.length === 0) {
+    return NextResponse.json(
+      { error: "Invalid PayPal order: missing purchase_units" },
+      { status: 400 }
+    );
+  }
+
+  const purchaseUnit = order.purchase_units[0];
+
+  if (purchaseUnit.amount.currency_code !== "USD") {
+    return NextResponse.json(
+      { error: "Only USD donations are accepted" },
+      { status: 400 }
+    );
+  }
+
+  const verifiedAmount = parseFloat(purchaseUnit.amount.value);
+
+  if (!verifiedAmount || verifiedAmount <= 0) {
+    return NextResponse.json(
+      { error: "Invalid PayPal order amount" },
+      { status: 400 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("donations")
     .insert({
       donor_name: sanitizedName,
-      amount,
+      amount: verifiedAmount,
       paypal_order_id,
+      social_handle: typeof social_handle === "string" && social_handle.trim()
+        ? sanitizeName(social_handle.trim())
+        : null,
     })
     .select()
     .single();
@@ -66,5 +94,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data }, { status: 201 });
+  // Get donor's current rank from the leaderboard view
+  const { data: leaderboard } = await supabase
+    .from("leaderboard_view")
+    .select("donor_name");
+
+  const rank = leaderboard
+    ? leaderboard.findIndex((e: { donor_name: string }) => e.donor_name === sanitizedName) + 1
+    : 0;
+
+  return NextResponse.json({ data, rank: rank || null }, { status: 201 });
 }

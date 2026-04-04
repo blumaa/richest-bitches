@@ -9,6 +9,9 @@ export interface PayPalOrderResponse {
   }>;
 }
 
+const PAYPAL_API_BASE =
+  process.env.PAYPAL_API_BASE ?? "https://api-m.sandbox.paypal.com";
+
 export async function verifyPayPalOrder(
   orderId: string
 ): Promise<PayPalOrderResponse> {
@@ -22,7 +25,7 @@ export async function verifyPayPalOrder(
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
   const response = await fetch(
-    `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}`,
+    `${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}`,
     {
       headers: {
         Authorization: `Basic ${auth}`,

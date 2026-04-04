@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { PayPalButtons } from "@paypal/react-paypal-js";
+
+type Status = "idle" | "processing" | "success" | "error";
 
 interface DonateSectionProps {
   onDonationComplete: () => void;
@@ -10,94 +12,258 @@ interface DonateSectionProps {
 export function DonateSection({ onDonationComplete }: DonateSectionProps) {
   const [donorName, setDonorName] = useState("");
   const [amount, setAmount] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [socialHandle, setSocialHandle] = useState("");
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
+  const [rank, setRank] = useState<number | null>(null);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
 
   const isNameValid = donorName.trim().length > 0;
   const parsedAmount = parseFloat(amount);
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount > 0;
+  const isProcessing = status === "processing";
+
+  useEffect(() => {
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    };
+  }, []);
+
+  const setStatusWithAutoClear = useCallback((newStatus: "success" | "error") => {
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    setStatus(newStatus);
+    dismissTimerRef.current = setTimeout(() => {
+      setStatus("idle");
+      setRank(null);
+    }, 5000);
+    statusRef.current?.focus();
+  }, []);
+
+  function dismissStatus() {
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    setStatus("idle");
+    setRank(null);
+  }
+
+  function fireConfetti() {
+    import("canvas-confetti").then((mod) => {
+      const confetti = mod.default;
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#FFD700", "#0007cd", "#FFED80", "#00ffff"],
+      });
+    });
+  }
+
+  function handleShare() {
+    const text = rank
+      ? `I'm ranked #${rank} on Richest Bitches!`
+      : "I just donated on Richest Bitches!";
+    const url = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({ title: "Richest Bitches", text, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(`${text} ${url}`).catch(() => {});
+    }
+  }
 
   return (
-    <section className="px-4 py-8">
-      <h2 className="text-2xl font-bold text-white mb-4 text-center">
-        Throw Your Money Away
-      </h2>
-
-      <div className="max-w-sm mx-auto space-y-4">
+    <div aria-label="Make a donation">
+      {/* 1. Name */}
+      <div className="mb-4">
+        <label htmlFor="donor-name" className="block text-xs text-secondary font-medium mb-1.5">
+          Leaderboard name
+        </label>
         <input
+          id="donor-name"
           type="text"
-          placeholder="Your name on the leaderboard"
+          placeholder="Your name"
           value={donorName}
           onChange={(e) => setDonorName(e.target.value)}
           maxLength={50}
-          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+          disabled={isProcessing}
+          className="w-full px-4 py-3 rounded-md bg-surface-raised border border-border text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:opacity-50"
         />
+      </div>
 
-        <input
-          type="number"
-          placeholder="Amount (USD)"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min="1"
-          step="0.01"
-          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-        />
-
-        <PayPalButtons
-            disabled={!isNameValid || !isAmountValid}
-            style={{ layout: "vertical", color: "gold", shape: "rect" }}
-            createOrder={(_data, actions) => {
-              return actions.order.create({
-                purchase_units: [
-                  {
-                    amount: {
-                      currency_code: "USD",
-                      value: parsedAmount.toFixed(2),
-                    },
-                    description: `Donation by ${donorName}`,
-                  },
-                ],
-                intent: "CAPTURE",
-              });
-            }}
-            onApprove={async (_data, actions) => {
-              const order = await actions.order?.capture();
-              if (!order) return;
-
-              const res = await fetch("/api/donations", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  donor_name: donorName,
-                  amount: parseFloat(
-                    order.purchase_units?.[0]?.amount?.value ?? "0"
-                  ),
-                  paypal_order_id: order.id,
-                }),
-              });
-
-              if (res.ok) {
-                setStatus("success");
-                setDonorName("");
-                setAmount("");
-                onDonationComplete();
-              } else {
-                setStatus("error");
-              }
-            }}
-            onError={() => setStatus("error")}
+      {/* 2. Amount */}
+      <div className="mb-4">
+        <label htmlFor="donation-amount" className="block text-xs text-secondary font-medium mb-1.5">
+          Power level
+        </label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-medium">$</span>
+          <input
+            id="donation-amount"
+            type="number"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min="1"
+            step="0.01"
+            disabled={isProcessing}
+            className="w-full pl-8 pr-4 py-3 rounded-md bg-surface-raised border border-border text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:opacity-50"
           />
+        </div>
+      </div>
 
+      {/* 3. Social handle — optional */}
+      <div className="mb-6">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <label htmlFor="social-handle" className="text-xs text-secondary font-medium">
+            Social (optional)
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTooltip(!showTooltip)}
+              className="text-muted hover:text-secondary transition-colors"
+              aria-label="What is this?"
+            >
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-border text-[10px]" aria-hidden="true">?</span>
+            </button>
+            {showTooltip && (
+              <div
+                role="tooltip"
+                className="absolute left-6 -top-1 w-48 p-2 rounded-lg bg-surface-overlay border border-border text-xs text-secondary z-10"
+              >
+                Your @ or profile URL will be linked on the leaderboard
+              </div>
+            )}
+          </div>
+        </div>
+        <input
+          id="social-handle"
+          type="text"
+          placeholder="@ or profile URL"
+          value={socialHandle}
+          onChange={(e) => setSocialHandle(e.target.value)}
+          maxLength={200}
+          disabled={isProcessing}
+          className="w-full px-4 py-3 rounded-md bg-surface-raised border border-border text-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:opacity-50"
+        />
+      </div>
+
+      {/* Processing state */}
+      {isProcessing && (
+        <p className="text-brand text-center font-medium animate-pulse mb-3" role="status">
+          Processing your donation...
+        </p>
+      )}
+
+      {/* PayPal */}
+      <p className="text-xs text-muted mb-2 text-center">Secure checkout</p>
+      <PayPalButtons
+        disabled={!isNameValid || !isAmountValid || isProcessing}
+        style={{ layout: "vertical", color: "gold", shape: "rect" }}
+        createOrder={(_data, actions) => {
+          return actions.order.create({
+            purchase_units: [
+              {
+                amount: {
+                  currency_code: "USD",
+                  value: parsedAmount.toFixed(2),
+                },
+                description: `Donation by ${donorName}`,
+              },
+            ],
+            intent: "CAPTURE",
+          });
+        }}
+        onApprove={async (_data, actions) => {
+          const order = await actions.order?.capture();
+          if (!order) return;
+
+          setStatus("processing");
+
+          const res = await fetch("/api/donations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              donor_name: donorName,
+              amount: parseFloat(
+                order.purchase_units?.[0]?.amount?.value ?? "0"
+              ),
+              paypal_order_id: order.id,
+              social_handle: socialHandle || undefined,
+            }),
+          });
+
+          if (res.ok) {
+            const json = await res.json();
+            setRank(json.rank);
+            setStatusWithAutoClear("success");
+            fireConfetti();
+            setDonorName("");
+            setSocialHandle("");
+            setAmount("");
+            onDonationComplete();
+          } else {
+            setStatusWithAutoClear("error");
+          }
+        }}
+        onError={() => setStatusWithAutoClear("error")}
+      />
+
+      {/* Status messages */}
+      <div ref={statusRef} role="status" aria-live="polite" tabIndex={-1} className="mt-3">
         {status === "success" && (
-          <p className="text-green-400 text-center font-semibold">
-            Donation recorded! You're on the board!
-          </p>
+          <div className="border border-gold/20 bg-gold/[0.06] rounded-md p-5 text-center animate-slideUp">
+            {rank && (
+              <p className="text-3xl font-bold text-gold mb-1">
+                You&apos;re #{rank}!
+              </p>
+            )}
+            <p className="text-secondary font-medium">
+              You&apos;re on the board!
+            </p>
+            <div className="flex gap-3 justify-center mt-4">
+              <button
+                onClick={handleShare}
+                className="px-4 py-2 rounded-md bg-brand text-brand-foreground text-sm font-medium hover:bg-brand-hover transition-colors"
+              >
+                Share
+              </button>
+              <button
+                onClick={dismissStatus}
+                className="px-4 py-2 rounded-md bg-surface-raised border border-border text-secondary text-sm hover:text-primary transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
         )}
         {status === "error" && (
-          <p className="text-red-400 text-center font-semibold">
-            Something went wrong. Try again.
-          </p>
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-error text-center font-medium">
+              Something went wrong. Try again.
+            </p>
+            <button
+              onClick={dismissStatus}
+              className="text-muted hover:text-primary text-sm"
+              aria-label="Dismiss error message"
+            >
+              ✕
+            </button>
+          </div>
         )}
       </div>
-    </section>
+
+      {/* Footer */}
+      <p className="text-xs text-muted text-center mt-4">
+        By donating, you agree to our{" "}
+        <a href="/terms" className="underline hover:text-secondary">
+          Terms
+        </a>{" "}
+        &{" "}
+        <a href="/refunds" className="underline hover:text-secondary">
+          Refund Policy
+        </a>
+      </p>
+    </div>
   );
 }

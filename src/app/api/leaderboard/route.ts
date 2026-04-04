@@ -3,10 +3,8 @@ import { supabase } from "@/lib/supabase";
 
 export async function GET() {
   const { data, error } = await supabase
-    .from("donations")
-    .select("id, donor_name, amount, created_at")
-    .order("amount", { ascending: false })
-    .limit(10);
+    .from("leaderboard_view")
+    .select("donor_name, total_amount, donation_count, last_donated_at");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

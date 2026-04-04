@@ -1,6 +1,78 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Font tokens — mapped to loaded Google Fonts per theme */
+  --font-sans: var(--app-font-body);
+  --font-mono: var(--app-font-mono);
+  --font-heading: var(--app-font-heading);
+
+  /* Color tokens */
+  --color-brand: var(--app-brand);
+  --color-brand-hover: var(--app-brand-hover);
+  --color-brand-active: var(--app-brand-active);
+  --color-brand-foreground: var(--app-brand-foreground);
+  --color-surface: var(--app-surface);
+  --color-surface-raised: var(--app-surface-raised);
+  --color-surface-overlay: var(--app-surface-overlay);
+  --color-border: var(--app-border);
+  --color-primary: var(--app-primary);
+  --color-secondary: var(--app-secondary);
+  --color-muted: var(--app-muted);
+  --color-error: var(--app-error);
+  --color-success: var(--app-success);
+  --color-gold: var(--app-gold);
+  --color-gold-light: var(--app-gold-light);
+  --color-silver: var(--app-silver);
+  --color-bronze: var(--app-bronze);
+
+  /* Radius tokens */
+  --radius-sm: var(--app-radius-sm);
+  --radius-md: var(--app-radius-md);
+  --radius-lg: var(--app-radius-lg);
+}
+
+/*
+ * Theme CSS variables are generated at runtime by ThemeStyles component
+ * from src/lib/themes.ts — single source of truth.
+ * This avoids Turbopack tree-shaking [data-theme] selectors.
+ */
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDrawerUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
+  50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); }
+}
+
+@utility animate-slideUp {
+  animation: slideUp 0.3s ease-out both;
+}
+
+@utility animate-slideDrawerUp {
+  animation: slideDrawerUp 0.3s ease-out;
+}
+
+@utility animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@utility animate-pulseGlow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@utility shadow-gold {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1), 0 0 40px rgba(255, 215, 0, 0.05);
 }
