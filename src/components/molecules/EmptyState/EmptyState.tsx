@@ -14,7 +14,7 @@ export function EmptyState({ onCtaClick }: EmptyStateProps) {
       </p>
       <button
         onClick={onCtaClick}
-        className="mt-6 px-6 py-3 rounded-md bg-brand text-brand-foreground font-bold hover:bg-brand-hover transition-colors"
+        className="mt-6 px-6 py-3 min-h-[44px] rounded-md bg-brand text-brand-foreground font-bold hover:bg-brand-hover transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
       >
         Donate Now
       </button>

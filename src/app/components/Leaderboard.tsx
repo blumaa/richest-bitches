@@ -50,7 +50,7 @@ export function Leaderboard({ entries }: LeaderboardProps) {
               style={{ animationDelay: `${index * 60}ms` }}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className={getRankBadgeStyles(rank)}>
+                <span className={getRankBadgeStyles(rank)} role="img" aria-label={`Rank ${rank}`}>
                   {getRankDisplay(rank)}
                 </span>
                 <div className="flex flex-col min-w-0">
@@ -83,7 +83,7 @@ function renderDonorName(entry: LeaderboardEntry, rank: number) {
         href={social.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${nameClass} hover:underline`}
+        className={`${nameClass} hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2`}
       >
         {entry.donor_name}
       </a>
@@ -103,7 +103,7 @@ function getRankRowStyles(rank: number): string {
   if (rank === 3) {
     return "p-4 border border-bronze/15 bg-bronze/[0.04]";
   }
-  return `p-3 border border-border bg-surface-raised${rank >= 8 ? " opacity-50" : ""}`;
+  return "p-3 border border-border bg-surface-raised";
 }
 
 function getRankBadgeStyles(rank: number): string {

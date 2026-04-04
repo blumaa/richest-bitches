@@ -2,8 +2,17 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyPayPalOrder } from "@/lib/paypal";
 import { sanitizeName } from "@/lib/sanitize";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again later." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
   const { donor_name, amount, paypal_order_id, social_handle } = body;
 

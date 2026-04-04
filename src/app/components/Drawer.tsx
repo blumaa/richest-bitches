@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DrawerProps {
@@ -10,11 +10,38 @@ interface DrawerProps {
 }
 
 const CLOSE_THRESHOLD = 100;
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export function Drawer({ isOpen, onClose, children }: DrawerProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap
+  const handleTabKey = useCallback((e: KeyboardEvent) => {
+    if (e.key !== "Tab" || !drawerRef.current) return;
+
+    const focusable = drawerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      // Focus first focusable element in drawer
+      requestAnimationFrame(() => {
+        const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        focusable?.[0]?.focus();
+      });
     } else {
       document.body.style.overflow = "";
     }
@@ -24,12 +51,16 @@ export function Drawer({ isOpen, onClose, children }: DrawerProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && isOpen) onClose();
+      if (e.key === "Escape") onClose();
+      if (e.key === "Tab") handleTabKey(e);
     }
+
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, handleTabKey]);
 
   return (
     <AnimatePresence>
@@ -38,7 +69,7 @@ export function Drawer({ isOpen, onClose, children }: DrawerProps) {
           {/* Backdrop */}
           <motion.div
             data-testid="drawer-backdrop"
-            className="absolute inset-0 bg-[rgba(0,0,0,0.6)]"
+            className="absolute inset-0 bg-[rgba(0,0,0,0.6)] cursor-pointer"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -48,6 +79,7 @@ export function Drawer({ isOpen, onClose, children }: DrawerProps) {
 
           {/* Drawer panel */}
           <motion.div
+            ref={drawerRef}
             className="absolute bottom-0 left-0 right-0 bg-surface border-t border-border rounded-t-lg p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] max-h-[85vh] overflow-y-auto"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}

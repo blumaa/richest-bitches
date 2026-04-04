@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PayPalButtons } from "@paypal/react-paypal-js";
+import { ShareButton } from "./ShareButton";
 
 type Status = "idle" | "processing" | "success" | "error";
 
@@ -18,6 +19,7 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
   const [rank, setRank] = useState<number | null>(null);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
+  const tooltipId = "social-tooltip";
 
   const isNameValid = donorName.trim().length > 0;
   const parsedAmount = parseFloat(amount);
@@ -29,6 +31,16 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
       if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     };
   }, []);
+
+  // Close tooltip on Escape
+  useEffect(() => {
+    if (!showTooltip) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowTooltip(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [showTooltip]);
 
   const setStatusWithAutoClear = useCallback((newStatus: "success" | "error") => {
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
@@ -58,21 +70,8 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
     });
   }
 
-  function handleShare() {
-    const text = rank
-      ? `I'm ranked #${rank} on Richest Bitches!`
-      : "I just donated on Richest Bitches!";
-    const url = window.location.href;
-
-    if (navigator.share) {
-      navigator.share({ title: "Richest Bitches", text, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(`${text} ${url}`).catch(() => {});
-    }
-  }
-
   return (
-    <div aria-label="Make a donation">
+    <section aria-label="Make a donation">
       {/* 1. Name */}
       <div className="mb-4">
         <label htmlFor="donor-name" className="block text-xs text-secondary font-medium mb-1.5">
@@ -96,7 +95,7 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
           Power level
         </label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-medium">$</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary font-medium" aria-hidden="true">$</span>
           <input
             id="donation-amount"
             type="number"
@@ -121,13 +120,15 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
             <button
               type="button"
               onClick={() => setShowTooltip(!showTooltip)}
-              className="text-muted hover:text-secondary transition-colors"
+              className="min-w-[44px] min-h-[44px] -m-3 inline-flex items-center justify-center text-muted hover:text-secondary transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
               aria-label="What is this?"
+              aria-describedby={showTooltip ? tooltipId : undefined}
             >
               <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-border text-[10px]" aria-hidden="true">?</span>
             </button>
             {showTooltip && (
               <div
+                id={tooltipId}
                 role="tooltip"
                 className="absolute left-6 -top-1 w-48 p-2 rounded-lg bg-surface-overlay border border-border text-xs text-secondary z-10"
               >
@@ -148,15 +149,55 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
         />
       </div>
 
-      {/* Processing state */}
-      {isProcessing && (
-        <p className="text-brand text-center font-medium animate-pulse mb-3" role="status">
-          Processing your donation...
-        </p>
-      )}
+      {/* Status messages — single live region */}
+      <div ref={statusRef} role="status" aria-live="polite" tabIndex={-1}>
+        {isProcessing && (
+          <p className="text-brand text-center font-medium animate-pulse mb-3">
+            Processing your donation...
+          </p>
+        )}
+        {status === "success" && (
+          <div className="border border-gold/20 bg-gold/[0.06] rounded-md p-5 text-center animate-slideUp mb-3">
+            {rank && (
+              <p className="text-3xl font-bold text-gold mb-1">
+                You&apos;re #{rank}!
+              </p>
+            )}
+            <p className="text-secondary font-medium">
+              You&apos;re on the board!
+            </p>
+            <div className="flex gap-3 justify-center mt-4">
+              <ShareButton
+                context="post-donation"
+                rank={rank ?? undefined}
+              />
+              <button
+                onClick={dismissStatus}
+                className="px-4 py-2 min-h-[44px] rounded-md bg-surface-raised border border-border text-secondary text-sm hover:text-primary transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+        {status === "error" && (
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <p className="text-error text-center font-medium">
+              Something went wrong. Try again.
+            </p>
+            <button
+              onClick={dismissStatus}
+              className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-muted hover:text-primary text-sm cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
+              aria-label="Dismiss error message"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* PayPal */}
-      <p className="text-xs text-muted mb-2 text-center">Secure checkout</p>
+      <p className="text-xs text-secondary mb-2 text-center">Secure checkout</p>
       <PayPalButtons
         disabled={!isNameValid || !isAmountValid || isProcessing}
         style={{ layout: "vertical", color: "gold", shape: "rect" }}
@@ -209,61 +250,17 @@ export function DonateSection({ onDonationComplete }: DonateSectionProps) {
         onError={() => setStatusWithAutoClear("error")}
       />
 
-      {/* Status messages */}
-      <div ref={statusRef} role="status" aria-live="polite" tabIndex={-1} className="mt-3">
-        {status === "success" && (
-          <div className="border border-gold/20 bg-gold/[0.06] rounded-md p-5 text-center animate-slideUp">
-            {rank && (
-              <p className="text-3xl font-bold text-gold mb-1">
-                You&apos;re #{rank}!
-              </p>
-            )}
-            <p className="text-secondary font-medium">
-              You&apos;re on the board!
-            </p>
-            <div className="flex gap-3 justify-center mt-4">
-              <button
-                onClick={handleShare}
-                className="px-4 py-2 rounded-md bg-brand text-brand-foreground text-sm font-medium hover:bg-brand-hover transition-colors"
-              >
-                Share
-              </button>
-              <button
-                onClick={dismissStatus}
-                className="px-4 py-2 rounded-md bg-surface-raised border border-border text-secondary text-sm hover:text-primary transition-colors"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
-        {status === "error" && (
-          <div className="flex items-center justify-center gap-2">
-            <p className="text-error text-center font-medium">
-              Something went wrong. Try again.
-            </p>
-            <button
-              onClick={dismissStatus}
-              className="text-muted hover:text-primary text-sm"
-              aria-label="Dismiss error message"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Footer */}
       <p className="text-xs text-muted text-center mt-4">
         By donating, you agree to our{" "}
-        <a href="/terms" className="underline hover:text-secondary">
+        <a href="/terms" className="underline hover:text-secondary cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2">
           Terms
         </a>{" "}
         &{" "}
-        <a href="/refunds" className="underline hover:text-secondary">
+        <a href="/refunds" className="underline hover:text-secondary cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2">
           Refund Policy
         </a>
       </p>
-    </div>
+    </section>
   );
 }

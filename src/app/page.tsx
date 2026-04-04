@@ -23,8 +23,20 @@ async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 export default async function Home() {
   const leaderboard = await getLeaderboard();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Richest Bitches",
+    description: "The ultimate donation leaderboard. Throw away your money for bragging rights.",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  };
+
   return (
     <main id="main-content" className="min-h-screen bg-surface px-4 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto max-w-lg lg:max-w-5xl">
         <Header />
 

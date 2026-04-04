@@ -10,9 +10,9 @@ const variantStyles = {
 } as const;
 
 const sizeStyles = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2",
-  lg: "px-6 py-3",
+  sm: "px-3 py-2.5 text-sm min-h-[44px]",
+  md: "px-4 py-2 min-h-[44px]",
+  lg: "px-6 py-3 min-h-[44px]",
 } as const;
 
 interface ButtonProps {
@@ -41,7 +41,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`rounded-md transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 disabled:opacity-40 disabled:cursor-not-allowed ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       {...rest}
     >
       {children}

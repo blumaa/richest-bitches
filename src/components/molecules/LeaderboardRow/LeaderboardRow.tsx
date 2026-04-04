@@ -46,7 +46,7 @@ function getRowStyles(rank: number): string {
     return "p-4 border border-silver/15 bg-silver/[0.04]";
   if (rank === 3)
     return "p-4 border border-bronze/15 bg-bronze/[0.04]";
-  return `p-3 border border-border bg-surface-raised${rank >= 8 ? " opacity-50" : ""}`;
+  return "p-3 border border-border bg-surface-raised";
 }
 
 function getNameStyles(rank: number): string {

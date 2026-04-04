@@ -68,13 +68,24 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Richest Bitches",
-  description: "Who can throw away the most money?",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: {
+    default: "Richest Bitches — The Donation Leaderboard",
+    template: "%s | Richest Bitches",
+  },
+  description: "Throw away your money for bragging rights. Compete on the ultimate donation leaderboard. Who can waste the most?",
+  keywords: ["donation", "leaderboard", "money", "competition", "flex", "bragging rights"],
+  authors: [{ name: "Richest Bitches" }],
   openGraph: {
-    title: "Richest Bitches",
-    description: "Who can throw away the most money?",
+    title: "Richest Bitches — The Donation Leaderboard",
+    description: "Throw away your money for bragging rights. Compete on the ultimate donation leaderboard.",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    siteName: "Richest Bitches",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Richest Bitches — The Donation Leaderboard",
+    description: "Throw away your money for bragging rights. Who can waste the most?",
   },
 };
 

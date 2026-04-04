@@ -20,6 +20,11 @@ vi.mock("@/lib/paypal", () => ({
   verifyPayPalOrder: (...args: unknown[]) => mockVerifyPayPalOrder(...args),
 }));
 
+// Mock rate limiter — never limit in tests
+vi.mock("@/lib/rate-limit", () => ({
+  isRateLimited: () => false,
+}));
+
 import { POST } from "./route";
 
 function makeRequest(body: Record<string, unknown>) {

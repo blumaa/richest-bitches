@@ -1,16 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import { Drawer } from "./Drawer";
 
-// Mock framer-motion to avoid animation complexity in unit tests
-vi.mock("framer-motion", () => {
-  const React = require("react");
+const MOTION_SKIP_PROPS = ["drag", "dragConstraints", "dragElastic", "onDragEnd", "initial", "animate", "exit", "transition"];
+
+vi.mock("framer-motion", async () => {
+  const React = await import("react");
   return {
     motion: {
-      div: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLDivElement>) => {
-        const { children, drag, dragConstraints, dragElastic, onDragEnd, initial, animate, exit, transition, style, ...rest } = props;
-        return React.createElement("div", { ...rest, ref, style }, children);
+      div: React.forwardRef(function MotionDiv(
+        props: Record<string, unknown>,
+        ref: React.Ref<HTMLDivElement>
+      ) {
+        const { children, style, ...rest } = props;
+        const htmlProps: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(rest)) {
+          if (!MOTION_SKIP_PROPS.includes(key)) {
+            htmlProps[key] = value;
+          }
+        }
+        return React.createElement("div", { ...htmlProps, ref, style }, children as React.ReactNode);
       }),
     },
     AnimatePresence: ({ children }: { children: React.ReactNode }) =>
@@ -18,7 +27,7 @@ vi.mock("framer-motion", () => {
   };
 });
 
-import React from "react";
+import { Drawer } from "./Drawer";
 
 describe("Drawer", () => {
   it("renders children when open", () => {
@@ -31,7 +40,7 @@ describe("Drawer", () => {
   });
 
   it("does not render when closed", () => {
-    const { container } = render(
+    render(
       <Drawer isOpen={false} onClose={vi.fn()}>
         <p>Drawer content</p>
       </Drawer>

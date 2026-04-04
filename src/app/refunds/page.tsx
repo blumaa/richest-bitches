@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Refund Policy",
+  description: "Refund policy for Richest Bitches donation leaderboard.",
+};
+
 export default function RefundsPage() {
   return (
     <main className="min-h-screen bg-surface px-4 py-12">

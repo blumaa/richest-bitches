@@ -18,7 +18,7 @@ export function ThemeSwitcher() {
   return (
     <button
       onClick={cycleTheme}
-      className="fixed bottom-4 right-4 z-50 px-3 py-2 rounded-md bg-surface-raised border border-border text-primary text-xs font-medium hover:bg-surface-overlay transition-colors"
+      className="fixed bottom-4 right-4 z-50 px-3 py-2 min-h-[44px] rounded-md bg-surface-raised border border-border text-primary text-xs font-medium hover:bg-surface-overlay transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
     >
       Theme: {themes[currentIndex].name}
     </button>

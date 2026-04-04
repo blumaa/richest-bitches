@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Terms of Service for Richest Bitches donation leaderboard.",
+};
+
 export default function TermsPage() {
   return (
     <main className="min-h-screen bg-surface px-4 py-12">
