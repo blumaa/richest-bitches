@@ -14,6 +14,7 @@ const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:
 
 export function Drawer({ isOpen, onClose, children }: DrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Focus trap
   const handleTabKey = useCallback((e: KeyboardEvent) => {
@@ -37,10 +38,9 @@ export function Drawer({ isOpen, onClose, children }: DrawerProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      // Focus first focusable element in drawer
+      // Focus the heading — not an input, so mobile keyboard won't open
       requestAnimationFrame(() => {
-        const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-        focusable?.[0]?.focus();
+        headingRef.current?.focus();
       });
     } else {
       document.body.style.overflow = "";
@@ -101,7 +101,7 @@ export function Drawer({ isOpen, onClose, children }: DrawerProps) {
             >
               <div className="w-10 h-1 rounded-full bg-muted/40" />
             </div>
-            <h2 className="text-xl font-bold text-primary mb-6 text-center">
+            <h2 ref={headingRef} tabIndex={-1} className="text-xl font-bold text-primary mb-6 text-center outline-none">
               Claim Your Throne
             </h2>
             {children}
