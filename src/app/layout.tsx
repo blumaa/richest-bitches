@@ -3,6 +3,7 @@ import { Inter, Geist_Mono, Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono, DM_Sans
 import "./globals.css";
 import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { ThemeStyles } from "./components/ThemeStyles";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -109,6 +110,7 @@ export default function RootLayout({
         </a>
         {children}
         <ThemeSwitcher />
+        <Analytics />
       </body>
     </html>
   );
